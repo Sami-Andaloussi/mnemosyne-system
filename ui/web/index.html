@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mnémosyne</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<aside class="rail">
+
+  <header class="rail-tete">
+    <div class="marque-nom">Mnémosyne</div>
+    <div class="marque-sous" id="horodatage">reading...</div>
+
+    <button class="rail-plier" id="rail-plier" title="Collapse the column" aria-label="Collapse the column">&lt;</button>
+  </header>
+
+
+  <div class="rail-principal">
+
+    <button class="bouton-discussion bouton-intendant" id="vers-intendant">
+      <svg class="bulle" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M3.6 1.6h6.2l3.6 3.6v9.2a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.6-.6V2.2a.6.6 0 0 1 .6-.6z"/>
+      </svg>
+      <span>The Steward</span>
+      <span class="pastille-magasin" id="pastille-magasin" hidden></span>
+    </button>
+    <button class="bouton-discussion bouton-conseiller" id="vers-conseiller">
+      <svg class="bulle" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M8 1.1l1.55 4.35 4.35 1.55-4.35 1.55L8 12.9l-1.55-4.35L2.1 7l4.35-1.55z"/>
+      </svg>
+      <span>The Advisor</span>
+    </button>
+    <button class="bouton-discussion" id="vers-discussion">
+      <svg class="bulle" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M2.4 2.2h11.2a1 1 0 0 1 1 1v7.1a1 1 0 0 1-1 1H6.9l-3.2 2.6a.4.4 0 0 1-.65-.31V11.3h-.65a1 1 0 0 1-1-1V3.2a1 1 0 0 1 1-1z"/>
+      </svg>
+      <span>Discussion</span>
+    </button>
+  </div>
+
+  <nav class="rail-nav" id="nav"></nav>
+  <footer class="rail-pied">
+    <button class="bouton-relire" id="relire">Re-read the state</button>
+
+    <div class="note-locale">local - offline - <span id="contrat-lu">contract ?</span></div>
+  </footer>
+</aside>
+
+
+<button class="rail-deplier" id="rail-deplier" title="Reopen the column" aria-label="Reopen the column" hidden>&gt;</button>
+
+<main class="scene" id="scene">
+  <div class="attente">Reading Mnémosyne...</div>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

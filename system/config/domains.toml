@@ -1,0 +1,169 @@
+# system/config/domains.toml
+# Vocabulaire controle des DOMAINES (D35). Source de verite unique.
+#
+# DEUX COUCHES a ne jamais confondre (voir docs/governance/PLAN_INCARNATION.md, brique 1) :
+#   - MACHINE (retrieval, D35) : la liste des slugs `[domains.*]` est PLATE.
+#     Le RAG filtre la-dessus. `domain` est MULTI-VALUE dans le frontmatter (D17) :
+#     un document porte plusieurs slugs, a plat, sans principal/secondaire.
+#   - HUMAINE (feuilletage Obsidian) : le champ `group` reconstruit un ARBRE lisible
+#     (dossiers dans dossiers). Les `group` NE SONT PAS des domaines : aucune valeur
+#     de retrieval, pure charpente pour l'oeil. La feuille de l'arbre = le slug.
+#
+# Regles (D35) : liste fermee mais EXTENSIBLE ; toute creation d'un nouveau domaine
+# passe par un FLAG valide par user. Chaque domaine = slug canonique langue-neutre
+# + aliases FR/EN (anti-doublon multilingue).
+
+# AUTORITE D'ACCES : la liste qui fait LOI est policy.toml [domains]."knowledge" (D72, zone
+# protegee D102). CE fichier = catalogue humain SUBORDONNE (labels / aliases / groupes MOC).
+# Parite de slugs OBLIGATOIRE : un domaine ici doit etre declare dans policy.toml, sinon ses
+# donnees sont invisibles au RAG (deni-par-defaut, invariant 4). Tout ajout = declare AUX DEUX.
+version = 1
+
+# --- Charpente de feuilletage HUMAINE (pas des domaines) -----------------------
+[groups]
+"finance/investing"       = "Evaluer & allouer"
+"finance/trading"         = "Executer & systematiser"
+"finance/assets"          = "Classes d'actifs"
+"methods"                 = "Boite a outils (maths/stats du quant)"
+"software"                = "Logiciel & systemes"
+"thinking"                = "Penser, decider, systemes"
+"_reserved"               = "Graine D35 reservee (pas encore de corpus)"
+
+# --- FINANCE : investing -------------------------------------------------------
+[domains.value-investing]
+group    = "finance/investing"
+label_fr = "Investissement valeur"
+label_en = "Value investing"
+aliases  = ["value investing", "analyse fondamentale", "valorisation", "valuation", "corporate finance", "accounting"]
+
+[domains.asset-pricing]
+group    = "finance/investing"
+label_fr = "Prix des actifs (theorie)"
+label_en = "Asset pricing"
+aliases  = ["asset pricing", "prix des actifs", "academic finance", "finance academique"]
+
+[domains.market-efficiency]
+group    = "finance/investing"
+label_fr = "Efficience & anomalies"
+label_en = "Market efficiency & anomalies"
+aliases  = ["market efficiency", "efficience des marches", "anomalies", "behavioral finance", "finance comportementale"]
+
+[domains.portfolio-management]
+group    = "finance/investing"
+label_fr = "Gestion de portefeuille"
+label_en = "Portfolio management"
+aliases  = ["portfolio management", "gestion de portefeuille", "asset allocation", "allocation d'actifs", "factor investing", "performance measurement", "funds", "etf", "hedge funds"]
+
+# --- FINANCE : trading ---------------------------------------------------------
+[domains.quant-trading]
+group    = "finance/trading"
+label_fr = "Trading quantitatif & systematique"
+label_en = "Quant & systematic trading"
+aliases  = ["quantitative trading", "trading quantitatif", "algorithmic trading", "systematic trading", "trading systematique", "backtesting", "trading strategies", "technical analysis"]
+
+[domains.market-microstructure]
+group    = "finance/trading"
+label_fr = "Microstructure & liquidite"
+label_en = "Market microstructure"
+aliases  = ["market microstructure", "microstructure", "liquidity", "liquidite", "execution", "high-frequency trading", "hft"]
+
+[domains.derivatives]
+group    = "finance/trading"
+label_fr = "Derives & ingenierie financiere"
+label_en = "Derivatives"
+aliases  = ["derivatives", "derives", "options", "futures", "financial engineering", "ingenierie financiere", "stochastic pricing"]
+
+[domains.risk-management]
+group    = "finance/trading"
+label_fr = "Gestion du risque"
+label_en = "Risk management"
+aliases  = ["risk management", "gestion du risque", "market risk", "risque de marche"]
+
+# --- FINANCE : assets ----------------------------------------------------------
+[domains.commodities]
+group    = "finance/assets"
+label_fr = "Matieres premieres"
+label_en = "Commodities"
+aliases  = ["commodities", "matieres premieres", "futures markets", "precious metals"]
+
+[domains.crypto]
+group    = "finance/assets"
+label_fr = "Crypto & blockchain"
+label_en = "Crypto & blockchain"
+aliases  = ["crypto", "cryptocurrency", "blockchain", "defi", "web3", "bitcoin", "ethereum", "digital currency"]
+
+# --- METHODS : la boite a outils -----------------------------------------------
+[domains.econometrics]
+group    = "methods"
+label_fr = "Econometrie & series temporelles"
+label_en = "Econometrics & time series"
+aliases  = ["econometrics", "econometrie", "time series", "series temporelles", "cointegration", "kalman filter", "var model"]
+
+[domains.statistics]
+group    = "methods"
+label_fr = "Statistique"
+label_en = "Statistics"
+aliases  = ["statistics", "statistique", "bayesian", "bayesien", "robust statistics", "hypothesis testing"]
+
+[domains.machine-learning]
+group    = "methods"
+label_fr = "Apprentissage automatique"
+label_en = "Machine learning"
+aliases  = ["machine learning", "apprentissage automatique", "statistical learning", "deep learning", "information theory"]
+
+[domains.optimization]
+group    = "methods"
+label_fr = "Optimisation & controle"
+label_en = "Optimization & control"
+aliases  = ["optimization", "optimisation", "optimal control", "controle optimal", "convex optimization", "dynamic programming", "numerical methods", "simulation"]
+
+# --- SOFTWARE ------------------------------------------------------------------
+[domains.computer-science]
+group    = "software"
+label_fr = "Informatique & systemes"
+label_en = "Computer science"
+aliases  = ["computer science", "informatique", "software engineering", "distributed systems", "databases", "bases de donnees", "sre"]
+
+[domains.information-retrieval]
+group    = "software"
+label_fr = "Recherche d'information"
+label_en = "Information retrieval"
+aliases  = ["information retrieval", "recherche d'information", "search", "rag", "vector search"]
+
+[domains.llm-engineering]
+group    = "software"
+label_fr = "Ingenierie LLM & IA"
+label_en = "LLM engineering"
+aliases  = ["llm engineering", "ingenierie llm", "ia", "ai", "prompt engineering", "agents"]
+
+# --- THINKING : penser, decider, systemes (les 3 ex-parkes hors-finance) -------
+[domains.decision-making]
+group    = "thinking"
+label_fr = "Decision, checklists & pensee systemique"
+label_en = "Decision-making & systems thinking"
+aliases  = ["decision making", "decision-making", "decision", "systems thinking", "pensee systemique", "systemes", "mental models", "modeles mentaux", "checklist", "process", "cognition", "rationality"]
+
+# --- GRAINE D35 reservee (pas encore de corpus, dossiers crees juste-a-temps) --
+[domains.macro]
+group    = "_reserved"
+label_fr = "Macroeconomie"
+label_en = "Macro"
+aliases  = ["macro", "macroeconomics", "macroeconomie"]
+
+[domains.psychologie]
+group    = "_reserved"
+label_fr = "Psychologie"
+label_en = "Psychology"
+aliases  = ["psychologie", "psychology", "cognition"]
+
+[domains.marketing]
+group    = "_reserved"
+label_fr = "Marketing"
+label_en = "Marketing"
+aliases  = ["marketing", "growth", "acquisition"]
+
+[domains.perso]
+group    = "_reserved"
+label_fr = "Personnel"
+label_en = "Personal"
+aliases  = ["perso", "personal", "journal", "vie privee"]

@@ -1,0 +1,48 @@
+# Taxonomy of the Mnemosyne library — SINGLE SOURCE OF TRUTH for shelving.
+#
+# Physical tree: knowledge/raw/<Family>/<Group>/<domain>/<type>/   (distilled/ MIRRORS it).
+# <domain> stays the fine-grained label = the RAG tag. <Family>/<Group> = navigation layers.
+# <type> is ALWAYS the file's direct parent => the domain is derived as the folder
+# directly above the type (independent of the family/group depth).
+#
+# Read by: (1) the restructuring script, (2) discover_books (domain derivation),
+# (3) triage (where to shelve a new book). Adding a domain = one line HERE, and only here.
+
+[domains]
+# --- Family: Finance ---
+asset-pricing         = ["Finance", "Investing"]
+market-efficiency     = ["Finance", "Investing"]
+portfolio-management  = ["Finance", "Investing"]
+value-investing       = ["Finance", "Investing"]
+derivatives           = ["Finance", "Trading"]
+market-microstructure = ["Finance", "Trading"]
+quant-trading         = ["Finance", "Trading"]
+risk-management       = ["Finance", "Risk-Management"]
+commodities           = ["Finance", "Assets"]
+crypto                = ["Finance", "Assets"]
+# --- Family: Methods ---
+statistics            = ["Methods", "Statistics"]
+econometrics          = ["Methods", "Statistics"]
+optimization          = ["Methods", "Optimization"]
+machine-learning      = ["Methods", "Machine-Learning"]
+# --- Family: Software ---
+computer-science      = ["Software", "Foundations"]
+information-retrieval = ["Software", "Information-Retrieval"]
+# Tooling = tool-watch material (formerly docs/veille), shelved by use (the tool-watch triage batch):
+agents                = ["Software", "Tooling"]
+rag                   = ["Software", "Tooling"]
+doc-processing        = ["Software", "Tooling"]
+stores                = ["Software", "Tooling"]
+memory                = ["Software", "Tooling"]
+runtime               = ["Software", "Tooling"]
+# --- Family: Economics ---
+macro                 = ["Economics", "Macro"]
+# --- Family: General ---
+misc                  = ["General", "Misc"]
+# --- Family: Personal ---
+career = ["Personal", "Career"]
+
+[types]
+# Types allowed under a domain. The current corpus = 'books' ; web/youtube/chats fill in with use.
+allowed = ["books", "web", "youtube", "chats"]
+default = "books"

@@ -1,0 +1,8 @@
+#!/bin/sh
+# Pre-push CI gate.
+#
+# Activate once per clone with `make hooks`.  The hook runs the same local
+# validation ladder before a branch is sent to any remote.
+set -e
+echo "[pre-push] running 'make test'..."
+make test

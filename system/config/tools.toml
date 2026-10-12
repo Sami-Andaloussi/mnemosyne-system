@@ -1,0 +1,12 @@
+# Tool registry template.
+#
+# The Guard denies tools absent from this file.  Add a tool only through a
+# reviewed policy change; the manifest describes its effect and egress posture.
+
+[[tools]]
+name = "search_memory"
+backend = "local_function"
+io_schema = "query:str -> passages:str"
+permissions = ["read"]
+egress = "stays_local"
+effect = "read_only"

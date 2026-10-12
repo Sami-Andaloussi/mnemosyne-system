@@ -1,0 +1,462 @@
+#!/bin/sh
+# .githooks/pre-commit - barrier: a staged plan (its DOOR `PLAN.md` /
+# `PLAN_COURANT.md`, or an ARC of its `plan/` directory) judged ILLISIBLE by
+# system/lib/mnemosyne/production/plan_format.py blocks the commit. Nothing else: this hook
+# touches no other file.
+#
+# A PLAN IS A DIRECTORY (D166, clause 7): before YYYY-MM-DD the filter below did not
+# Deployment-specific measurement omitted; the behavior is covered by tests.
+# of a directory (`docs/plan/arc-c.md`, `projects/x/y/plan/arc-c.md`) matched it, `plans`
+# stayed empty, `exit 0` - the barrier vanished WITHOUT A WORD as soon as the plan became a
+# directory. This is the arc's first gesture, before any byte is moved: it is the safety net.
+#
+# A NESTED PLAN WAS JUDGED BY NOTHING (hole found by the third isolated audit, closed on
+# YYYY-MM-DD) - and it is the SAME fault as the diff-status filter, one notch below.
+# Real commit reproduced in a clone: `docs/gov/PLAN.md` + `docs/gov/plan/orphelin.md` never
+# indexed -> `exit 0`, HEAD moves. The reader (`owning_plan`) does however implement clause 3
+# of D166 correctly, « every directory carrying a door is a plan, AT EVERY LEVEL » ; it is the `case`
+# below that knew only TWO hard-coded locations. A list of locations always forgets
+# one more location, exactly as a list of statuses forgets one more status
+# - and nesting is not a special case here, it is THE SHAPE being aimed at (a hundred or so
+# theories, each with its strategies, ~150x the current volume).
+# The prefilter therefore no longer asks ANY question of PLACE: it asks a question of SHAPE, and it
+# is a SUPERSET of what `owning_plan` can claim - which claims only two things,
+# (a) a file whose NAME is in `DOOR_FILENAMES`, (b) a path under `<dossier>/plan/`.
+# (DEPTH already passed for what the prefilter saw: the `*` of an sh `case` traverses
+# `/`, so `projects/trading/sample_lab/theories/T001/PLAN.md` was already judged - but no
+# depth saved a plan placed anywhere other than under `docs/` or `projects/<bulle>/<projet>/`.)
+#
+# ERASING IS A PATH IN (hole found by isolated audit C20-5, closed on YYYY-MM-DD). The filter
+# knew only `ACM`, which EXCLUDES `D` : `git rm` of an indexed arc put NOTHING into `plans`,
+# `exit 0` in silence, and the door went on citing a vanished file - the refusal
+# `index_sans_fichier` was never evaluated. Three rules close the CLASS, not the case:
+#   1. `D` enters the filter, and the list of DELETED paths travels down to the judge;
+#   2. `folder_form` stays true as soon as a staged DELETED path lives under `<dossier>/plan/`.
+#      Without that the hole REOPENED on the gravest case: erasing the LAST arc empties
+#      `<dossier>/plan/` from the index, `folder_form` falls back to false, and `index_sans_fichier` is
+#      suppressed by the very clause that exists for single-file plans;
+#   3. a DELETED path that no door claims any more is refused ONLY if it is a DOOR and
+#      indexed arcs remain behind it. Erasing an ENTIRE plan (door + arcs, same
+#      commit) passes: nothing is left that could lie, and refusing there would be pure friction.
+#      Erasing the ONLY door while leaving the arcs is refused - an arc without a door belongs to
+#      no plan. An ADDED or MODIFIED path that nothing claims stays refused as before.
+#
+# RENAMING TOO (hole found on YYYY-MM-DD) - and the general LESSON, which is worth more than the case.
+# `git mv docs/plan/arc-c.md docs/plan/arc-d.md` produced `exit 0` and a HEAD that moves, the door
+# now citing a file that no longer exists, whereas the SAME final state reached by
+# `git rm` + `git add` was refused. Same state, two gestures, two verdicts: the defect was not
+# a missing `D` and then a missing `R`, it was REASONING BY DIFF STATUS. A status filter
+# always forgets one more status (`R`, `C`, `T`, and the one git will add). The barrier therefore
+# now asks ONE question of STATE - « what is the RESULTING state of each touched plan? » - and
+# no question of gesture: every staged path travels down (no `--diff-filter`), a
+# rename is undone into a deletion + an addition (`--no-renames`) so that BOTH paths are
+# judged, and « erased » is read in the RESULTING INDEX (`git ls-files`), not in a status.
+#
+# THE BARRIER NO LONGER COUNTS THE ARCS ITSELF (YYYY-MM-DD). `judge()` redid a plan's fold
+# inline - `read_plan` + `plan_entries` + `merge_plan` + `index_problems` - that is a
+# THIRD enumeration, while `plan_new_run.render()` printed to Operator « it is the same code
+# Deployment-specific measurement omitted; the behavior is covered by tests.
+# broken symlink under `plan/` (registry ILLISIBLE, barrier `exit 0`) and an empty `plan/` directory
+# on the disk (likewise). It now goes through `fold_plan`, the single enumeration, the one
+# `make plans`, `make ui-json` and `make plan-nouveau` already take - and at the same stroke it inherits
+# the two PER-ARC refusals the copy did not have: `bloc_non_ferme` and `arc_vide`.
+# The symlink is closed on BOTH sides (mode `120000` read from `git ls-files -s`, a single
+# call to git as before). The EMPTY `plan/` directory CANNOT be - git does not track
+# empty directories: the divergence is DECLARED in `judge()` and FROZEN by a test.
+#
+# Deployment-specific measurement omitted; the behavior is covered by tests.
+# "illisible" on stdout without ever exiting non-zero (`python -c "print(...)"` ALWAYS
+# exits 0, whatever it prints) - so the `&&` that chained it to the commit let it through.
+# A check that PRINTS without EXITING NON-ZERO is not a barrier, it is a
+# comment. This hook's rule: it exits 1 if (and only if) a staged plan is
+# illisible, 0 otherwise - never an exit 0 accompanied by a failure message.
+#
+# core.hooksPath already points at this directory on this clone (Makefile:242-244, target `hooks`):
+# this file is active as soon as it is present, with no other gesture (`make hooks` is still needed
+# on a clone that has never run it).
+#
+# Emergency: `git commit --no-verify` short-circuits this hook (and every other one).
+
+set -eu
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+# --- 1. a door faster than the wall --------------------------------------------------------
+# This hook runs on EVERY commit of the repo: its empty-case cost must stay nil (a door slower
+# than the wall is never used). ONE SINGLE call to git before the empty-case `exit 0`, and it is
+# this one - all the rest (the judge, reading the index) happens only afterwards.
+#
+# NO `--diff-filter`, and `--no-renames` : the two halves of a single rule. What we want to
+# know is not what HAPPENED to a path but which paths are staged, all of them, so as to
+# go and read the STATE that results from it. With no filter, `A` `C` `D` `M` `T` `R` `U` all travel down, and
+# so does the status git will add next year. `--no-renames` turns the pairing off: git
+# no longer invents an `R`, a rename comes back as a deletion PLUS an addition, and BOTH
+# paths are judged - the old one, which the door may still cite, and the new one, which the door
+# may not know about. It also turns similarity detection off, so it costs LESS than
+# the default.
+#
+# WHAT WAS WRITTEN HERE WAS FALSE, and a false comment is worse than no comment: it
+# closes the question. It announced « a pure rename (status R, only if `diff.renames` is
+# active - which is not the default here, verified on YYYY-MM-DD) ». `diff.renames` is TRUE
+# Deployment-specific measurement omitted; the behavior is covered by tests.
+# on YYYY-MM-DD (git 2.53.0) after `git mv docs/plan/arc-c.md docs/plan/arc-d.md`:
+#     git diff --cached --name-only --diff-filter=ACMD  ->  (EMPTY)
+#     git diff --cached --name-only                     ->  docs/plan/arc-d.md  (destination ONLY)
+#     git diff --cached --name-status                   ->  R100  arc-c.md  arc-d.md
+#     git diff --cached --name-only --no-renames        ->  arc-c.md AND arc-d.md
+# Four commits wrongly passed: renaming an arc; renaming the DOOR (it evaporates, the arcs
+# are left orphaned); renaming any file INTO `plan/` (arc never indexed); moving
+# an arc from one plan to ANOTHER (both doors lie).
+#
+# `-z` IS NOT A DETAIL, it is a barrier that disappears. Without it, git QUOTES every path
+# outside pure ASCII: an accented `docs/plan/arc oublie.md` comes back as
+# `"docs/plan/arc oubli\303\251.md"`, quote included. The leading quote matches NO
+# pattern of the `case` below, so the file is never judged and the hook exits 0 - in silence.
+# Paths can contain accents. Validate this hook against synthetic non-ASCII paths rather than
+# assuming plan paths are ASCII-only.
+staged="$(git diff --cached --name-only --no-renames -z | tr '\0' '\n')"
+
+# Isolate each path without breaking it on a space (for example
+# "projects/sample/Example Project/PLAN.md"): IFS varies only for the duration of this split, on the
+# newline alone (`git diff --name-only` yields one path per line, never quotes here).
+old_ifs=$IFS
+IFS='
+'
+set -- $staged
+IFS=$old_ifs
+
+# The two shapes of a plan, WITH NO PLACE AT ALL, and nothing else:
+#   - the DOOR            a file NAMED `PLAN.md` / `PLAN_COURANT.md`, at any
+#                         depth (`PLAN.md` at the root, `*/PLAN.md` everywhere else);
+#   - an ARC of the dir   any `.md` under a `plan/` path segment, at any
+#                         depth (`plan/*.md`, `*/plan/*.md`).
+# `*` traverses `/`, so `docs/plan/c/arc-1.md`, `docs/gov/plan/orphelin.md` and
+# `docs/a/plan/b/plan/c/PLAN.md` (three levels) all enter. The FALSE NEIGHBOURS stay out
+# because BOTH edges of the `plan` segment are literal `/` in the pattern, and that is tested
+# on a NAMED list: `docs/PLAN_ANCIEN.md` (the name is not the imposed one),
+# `docs/plans/x.md` (plural directory), `docs/replan/x.md` (left edge),
+# `docs/plan.md` (not a directory), `docs/plan/notes.txt` (not an arc).
+#
+# THESE FOUR PATTERNS ARE A COPY OF `DOOR_FILENAMES` / `ARCS_DIRNAME`, and a copy drifts.
+# `tests/platform/test_pre_commit_plan_gate.py` re-reads THIS `case` and requires the set of its
+# patterns to be exactly the one DERIVED from the Python constants - adding a third door name
+# on the reader side without placing it here turns red, instead of silently making a plan invisible.
+plans=""
+for f in "$@"; do
+    case "$f" in
+        PLAN.md|PLAN_COURANT.md|*/PLAN.md|*/PLAN_COURANT.md)
+            plans="${plans}${f}
+"
+            ;;
+        plan/*.md|*/plan/*.md)
+            plans="${plans}${f}
+"
+            ;;
+    esac
+done
+
+if [ -z "$plans" ]; then
+    exit 0
+fi
+
+# --- 2. judge EACH staged plan, on its INDEXED content, never the disk ---------------------
+# TRAP AVOIDED: `git diff --cached` says WHAT is staged, but the content to judge is
+# that of the INDEX - not of the file on disk, which can diverge (partial staging). Judging the
+# working tree would bless a commit that was never read. `git show :<path>` reads exactly
+# the indexed blob; that is what `read_plan` (system/lib/mnemosyne/production/plan_format.py,
+# NOT modified by this hook - only imported) receives below.
+export MNEMO_STAGED_PLANS="$plans"
+# ALL staged paths, not only the plan-shaped ones: the judge works out for itself
+# which ones have vanished, and it asks that question of `<dossier>/plan/`, not of a file name -
+# a `docs/plan/notes.txt` leaving the index says « this plan WAS a directory » just as loudly as an
+# arc. It is the same string as above: zero extra calls to git.
+export MNEMO_STAGED_PATHS="$staged"
+PYTHONPATH=system/lib uv run python - <<'PYEOF'
+import os
+import subprocess
+import sys
+
+from mnemosyne.production.plan_format import (
+    ARCS_DIRNAME,
+    DOOR_FILENAMES,
+    ROLE_PLAN,
+    PlanProblem,
+    fold_plan,
+    is_readable,
+    owning_plan,
+    unreadable_reasons,
+)
+from mnemosyne.production.plan_registry import ARC_ILLISIBLE, LIEN_SYMBOLIQUE
+
+ETAT_ILLISIBLE = "illisible"
+
+#: The git INDEX mode of a symbolic link, and the ONLY way this barrier can learn about one:
+#: `git show :<path>` on a link hands back the TARGET PATH as if it were the file's own text, which
+#: parses as a perfectly ordinary arc carrying no item and refuses nothing.
+#:
+#: [important] A SYMLINK IS TWO DIFFERENT FILES AT ONCE -- the index holds the LINK, the disk holds its
+#: TARGET -- so this barrier (which reads the index, on purpose, and must) and `make plans` (which
+# Deployment-specific measurement omitted; the behavior is covered by tests.
+#: a broken link under `plan/` gave ILLISIBLE at the registry and `exit 0` here, and a valid one
+#: would have diverged the other way. `plan_registry._read_text` refuses every symlink on the disk
+#: side; refusing them here is what makes the four surfaces answer the same thing.
+#:
+# Deployment-specific measurement omitted; the behavior is covered by tests.
+#: (3 in `.venv/bin`, all python interpreters), ZERO tracked by git. This refuses a shape nobody
+#: writes and closes a divergence that was real.
+SYMLINK_MODE = "120000"
+
+#: WARNING: `LIEN_SYMBOLIQUE` IS IMPORTED, NEVER RETYPED. A person must meet ONE sentence whether they
+#: hit this at `make plans` or at the barrier, and two expressions of one sentence drift -- which is
+#: the very class this pass closes one level up. `plan_registry` owns it; here it is read.
+#:
+#: `plan_registry` also owns `LIEN_CASSE`, and this hook can never say it: on the DISK a link either
+#: resolves or does not, while in the git INDEX a link has no resolvable target at all -- a mode
+#: `120000` entry is simply a LINK. So the barrier says `LIEN_SYMBOLIQUE` for both, always, and it
+#: is not an approximation but the only thing the index knows. Both are refused on both sides, so
+#: the VERDICT agrees; the disk's extra precision about the cause is not a fact git holds.
+
+#: `{chemin: mode}` for the RESULTING index. Filled by `indexed_tree()` below, which is called
+#: unconditionally -- and which exits 1 rather than returning empty if git cannot answer, because an
+#: empty map here would silently turn every symlink back into an ordinary file.
+MODES = {}
+
+
+def index_text(path):
+    """The STAGED bytes of `path` (index, stage 0) -- never the working-tree copy on disk."""
+    proc = subprocess.run(["git", "show", ":" + path], capture_output=True)
+    if proc.returncode != 0:
+        reason = proc.stderr.decode("utf-8", "replace").strip()
+        return None, "lecture de l'index impossible (" + reason + ")"
+    try:
+        return proc.stdout.decode("utf-8"), ""
+    except UnicodeDecodeError as exc:
+        return None, "encodage invalide dans l'index (%s)" % exc
+
+
+def read_indexed(path):
+    """What the INDEX says `path` holds -- `(text, "")`, or `(None, why)`. `fold_plan`'s `read`.
+
+    The mode is answered BEFORE the bytes, and the order is the rule: `git show` on a link succeeds
+    and returns its target path, so asking the bytes first means never asking the mode at all.
+    """
+    if MODES.get(path) == SYMLINK_MODE:
+        return None, LIEN_SYMBOLIQUE
+    return index_text(path)
+
+
+def lost(member, why):
+    """One arc of THIS plan that could not be read -- and the rest of the plan is STILL judged.
+
+    WARNING: It RETURNS a problem; it never returns from `judge`. The loop this replaces bailed out on the
+    FIRST unreadable arc, which is exactly the blast radius D170 shrank on the registry side (ONE bad
+    file out of thirteen took `scan_plans` from 43 items to 0, and every surface reading it went
+    blank together). A lost arc now degrades ITSELF: the plan keeps its door and its readable arcs,
+    and `is_readable` refuses ANY reading carrying a problem -- so the verdict stays ILLISIBLE and
+    nothing that used to be refused is waved through. Only the blast radius shrinks.
+
+    `line=0` and no `source`: the shape `arc_hors_index` and `arc_vide` already use for a refusal
+    about a FILE rather than a line. The path travels in the detail.
+    """
+    return PlanProblem(
+        0,
+        ARC_ILLISIBLE,
+        "%s : %s - ses items MANQUENT au plan jugé ; répare ce fichier et remets-le en scène"
+        % (member, why or "introuvable"),
+    )
+
+
+def indexed_tree():
+    """Every path the INDEX holds, WITH its mode -- `(chemins, {chemin: mode})`.
+
+    `-s` rather than a second call to git, and that is the entire cost of the symlink rule: one
+    `git ls-files` was already being run for `tree`, and `-s` puts the mode in the very same bytes.
+    This hook runs on EVERY commit of the repo, so a door slower than the wall is never used.
+
+    `-z` so a space, colon, or non-ASCII character in a name never becomes two paths or a quoted
+    representation. A quoted path matches no arc or index entry.
+
+    Each record is `MODE SP SHA SP STAGE TAB chemin`, split on the FIRST tab so a tab inside a file
+    name stays part of the name. The keys come back DE-DUPLICATED and in index order: `-s` lists an
+    unmerged path once per stage, and two identical arcs would collide on their own identities.
+    """
+    proc = subprocess.run(["git", "ls-files", "-s", "-z"], capture_output=True)
+    if proc.returncode != 0:
+        # FAIL-CLOSED, and this is not decorative prudence: this return was `()` for as long as
+        # the list of erased paths came from its own `git diff`. Now that « erased » MEANS
+        # « absent from this tree », an empty tree reads as « everything has been erased » - and every
+        # erased path that no door claims any more is ignored by construction. A mute `ls-files`
+        # would therefore have switched the ENTIRE barrier off by returning 0. We exit 1 and say so.
+        sys.stderr.write(
+            "[pre-commit] `git ls-files` a echoue -- l'index resultant est illisible, donc aucun "
+            "plan ne peut etre juge. Commit refuse.\n"
+        )
+        sys.exit(1)
+    modes = {}
+    for record in proc.stdout.decode("utf-8", "replace").split("\0"):
+        if not record:
+            continue
+        head, _, path = record.partition("\t")
+        modes[path] = head.split(" ", 1)[0]
+    return tuple(modes), modes
+
+
+def folder_of(path):
+    """The directory part of a `/`-joined path -- `""` at the root, never the file's own name."""
+    return path.rsplit("/", 1)[0] if "/" in path else ""
+
+
+def arcs_left_behind(door_path, tree):
+    """Does `<folder>/plan/` still hold a markdown arc in the INDEX, once `door_path` is erased?
+
+    The whole tie-break of the ERASE class. Deleting a plan ENTIRELY (door and arcs in the same
+    commit) leaves nothing that can lie, so it must pass; deleting only the door leaves arcs that
+    belong to no plan and are judged by nothing, so it must be refused. The question is asked of the
+    INDEX, which is already the post-commit state -- an arc deleted in this same commit is gone
+    from it, which is exactly why the two cases separate here and nowhere else.
+    """
+    folder = folder_of(door_path)
+    under = (folder + "/" if folder else "") + ARCS_DIRNAME + "/"
+    return any(p.startswith(under) and p.endswith(".md") for p in tree)
+
+
+def judge(folder, tree, deleted=()):
+    """Read the WHOLE plan rooted at `folder` from the index, and say why it is refused (or not).
+
+    The unit judged is the PLAN, never the staged file: an arc alone has no cap and would be
+    refused by a rule meant for a door, and a door alone cannot see that an arc is missing from
+    its index. Reading door + arcs from the index also threads ONE identity ledger through the
+    whole folder, so a `D3` in two different arcs is caught -- which is invisible file by file.
+
+    `fold_plan` is the single enumeration of a plan's arcs: `read_plan_tree` (used by `make plans`
+    and `make ui-json`) and `verify_readability` (used by `make plan-nouveau`) already go through it.
+    Rebuilding that walk inline would create a third, divergent enumeration and bypass per-arc
+    refusals such as `bloc_non_ferme` and `arc_vide`.
+
+    What the barrier still owns is exactly what only the INDEX can answer, and nothing else: which
+    paths exist (`tree`), what MODE each carries (`read_indexed`), and what its bytes are.
+    """
+    door_path = next(
+        (
+            (folder + "/" + name if folder else name)
+            for name in DOOR_FILENAMES
+            if (folder + "/" + name if folder else name) in tree
+        ),
+        None,
+    )
+    if door_path is None:
+        return folder or ".", [
+            "ligne -   : aucune porte (`%s`) dans `%s` -- un arc sans porte n'appartient a "
+            "aucun plan" % ("` / `".join(DOOR_FILENAMES), folder or ".")
+        ]
+    door_text, why = read_indexed(door_path)
+    if door_text is None:
+        return door_path, ["ligne -   : " + why]
+
+    prefix = (folder + "/") if folder else ""
+    under = prefix + ARCS_DIRNAME + "/"
+    # `folder_form`: does a `plan/` directory exist at all in the INDEX? A plan that is one file
+    # has no index to verify, and reading its prose as index entries refused a real commit once.
+    #
+    # ... OR did one exist BEFORE this commit? Without the second half, erasing the LAST arc of a
+    # plan emptied `<folder>/plan/` from the index, `folder_form` fell back to False, and
+    # `index_sans_fichier` -- the one refusal that catches a door still citing a file that no
+    # longer exists -- was suppressed by the clause written for single-file plans. The hole this
+    # whole pass closes would have reopened on its own worst case, in silence.
+    #
+    # WARNING:WARNING: THE ONE STATE WHERE THE FOUR SURFACES CANNOT BE MADE TO AGREE, AND IT IS STRUCTURAL.
+    # GIT DOES NOT TRACK EMPTY DIRECTORIES. So a plan whose `<folder>/plan/` EXISTS ON THE DISK and
+    # holds nothing is, at the same instant:
+    #   * FOLDER form for `plan_registry`, which asks the disk -- `(folder / ARCS_DIRNAME).is_dir()`
+    #     is True, `index_sans_fichier` is evaluated, and every arc the door names is missing:
+    #     `make plans` says ILLISIBLE;
+    #   * FILE form here, which asks the index -- no path can start with `<folder>/plan/`, no
+    #     erasure was staged, so `folder_form` is False, `index_sans_fichier` is SUPPRESSED by the
+    #     clause written for single-file plans, and this barrier exits 0.
+    # The two predicates are not two implementations of one question; they are two questions that
+    # git guarantees will differ on exactly this population. Neither side can close it: reading the
+    # disk here would make the barrier bless bytes nobody is committing (the "TRAP AVOIDED" above),
+    # and the registry cannot see an index it does not read.
+    # POPULATION: a `plan/` directory that exists and is EMPTY -- which no commit can ever create
+    # or preserve, so it only ever exists between two gestures of a person's editor. Every other
+    # state (`plan/` absent, `plan/` holding at least one file, `plan/` emptied BY this commit --
+    # the `deleted` clause right below) has the four surfaces agreeing.
+    # DECLARED rather than closed, and FROZEN by
+    # `test_an_EMPTY_plan_directory_is_the_ONE_state_where_the_two_sides_DIVERGE`, which runs both
+    # sides on this exact case and asserts the divergence. The day git tracks empty directories,
+    # that test goes red -- which is the only notice anyone will get.
+    reading = fold_plan(
+        door_text,
+        # `tree` for the fold is every path under `plan/` RELATIVE TO THE DOOR (`plan/socle.md`,
+        # `plan/t1/PLAN.md`). Which of those are THIS plan's arcs is `plan_entries`' answer, inside
+        # the fold, and nobody else's -- re-sorting arcs from nested doors out here would be the
+        # second enumeration coming back through the window.
+        tuple(p[len(prefix) :] for p in tree if p.startswith(under)),
+        lambda member: read_indexed(prefix + member),
+        folder_form=any(p.startswith(under) for p in tree)
+        or any(p.startswith(under) for p in deleted),
+        on_loss=lost,
+    )
+    if is_readable(reading, role=ROLE_PLAN):
+        return door_path, []
+    lines = ["%s : %s -- %s" % (p.where, p.kind, p.detail) for p in reading.problems]
+    lines += ["ligne -   : " + reason for reason in unreadable_reasons(reading, role=ROLE_PLAN)]
+    return door_path, lines
+
+
+paths = [p for p in os.environ.get("MNEMO_STAGED_PLANS", "").split("\n") if p]
+#: Every staged path, plan-shaped or not -- the un-filtered list `paths` was carved out of.
+staged = tuple(p for p in os.environ.get("MNEMO_STAGED_PATHS", "").split("\n") if p)
+tree, MODES = indexed_tree()
+#: ERASED = "staged, and ABSENT from the RESULTING index". A question about STATE, asked of
+#: `git ls-files` -- which is already read for `tree`, so this costs nothing and replaces a second
+#: `git diff --cached --diff-filter=D`. That filter was the same status reasoning one level down,
+#: and status reasoning is what let `git mv` through: `D` covered `git rm` and nothing covered a
+#: rename git decided to call `R`. Here `git rm`, the source of a `git mv`, an `R` git paired on
+#: its own, a `T` that dropped the blob -- and the status nobody has written yet -- all answer the
+#: same way, because none of them is asked. Only "is it still there?" is.
+present = set(tree)
+deleted = tuple(p for p in staged if p not in present)
+failures = []
+seen_folders = []
+for path in paths:
+    folder = owning_plan(path, tree)
+    if folder is None and path in deleted:
+        # ERASED, and no door in the index claims it -- so the door itself is going away. Two very
+        # different commits land here and only ONE of them lies: dropping a whole plan (door and
+        # arcs together) leaves nothing behind, while dropping the door alone strands every arc.
+        # `judge` answers, rather than a sentence written a second time here: with the door gone
+        # from the index it takes its own `door_path is None` branch, which is exactly the refusal
+        # this case deserves and keeps ONE wording for it.
+        if path.rsplit("/", 1)[-1] in DOOR_FILENAMES and arcs_left_behind(path, tree):
+            orphaned = folder_of(path)
+            if orphaned not in seen_folders:
+                seen_folders.append(orphaned)
+                failures.append((path, judge(orphaned, tree, deleted)[1]))
+        continue
+    if folder is None:
+        # The staged file matched a plan-shaped pattern and no door claims it. Named rather than
+        # skipped: silently ignoring it is precisely the hole this clause was written to close.
+        failures.append((path, ["ligne -   : aucune porte au-dessus de ce fichier -- il "
+                                "n'appartient a aucun plan et n'est juge par rien"]))
+        continue
+    if folder in seen_folders:
+        continue
+    seen_folders.append(folder)
+    label, lines = judge(folder, tree, deleted)
+    if lines:
+        failures.append((label, lines))
+
+if not failures:
+    sys.exit(0)
+
+sys.stderr.write("[pre-commit] plan illisible mis en scene -- commit refuse.\n\n")
+for path, lines in failures:
+    sys.stderr.write("  %s -- etat : %s\n" % (path, ETAT_ILLISIBLE))
+    for line in lines:
+        sys.stderr.write("    " + line + "\n")
+    sys.stderr.write("\n")
+sys.stderr.write("Urgence (a n'utiliser qu'en cas de reel besoin) : git commit --no-verify\n")
+sys.exit(1)
+PYEOF

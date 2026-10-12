@@ -1,0 +1,140 @@
+# The protected skill registry (⑥ / D114-TO2, SE4 — sibling of tools.toml in the same protected zone).
+#
+# DENY-BY-DEFAULT. A skill absent from this file is NOT advertised by `describe_self`, and — once a
+# skill run-path exists — will not run (D37: ACTIVE is the ONLY state that may run). This file is the
+# durable home of the skill lifecycle's terminal truth: which skills the operator has sanctioned ACTIVE.
+#
+# Adding an entry with `state = "active"` is a PRIVILEGED HUMAN ACT (Effect.POLICY_WRITE / D102), and
+# it PRESUPPOSES the distinct-auditor ritual: generate -> audit (by a DISTINCT verifier, D39-6 / D75)
+# -> activate (the operator's validation, D37). This file is read-only to every surveilled agent (SE4): a
+# handle on the running catalog cannot mutate it (D100 — incapacity, not trust). The catalog is
+# DESCRIBE-ONLY: it advertises capabilities; it authorises no execution (a future skill run-path must
+# re-enforce the audit gate before running — never trust this file to run code).
+#
+# The shape of an entry:
+#
+# [[skills]]
+# name            = "distillateur"      # unique; a duplicate name is REFUSED at load (no silent shadow)
+# version         = "1.0"
+# role            = "produce the distilled understanding of a document"  # the one-line "what it does"
+# state           = "active"            # draft | audited | active  (only ACTIVE is advertised / runs)
+# sensitivity_max = "perso"             # public | perso | sensible
+# task_class      = "atomic"            # atomic | orchestration
+# network         = false               # declares a NEED for the network; the policy decides (D38)
+# domains         = ["trading"]         # optional; the domains it may touch
+#
+# HONEST NOTE on `sensitivity_max` (2026-07-17) — the header above calls it "the Guard-enforced
+# ceiling". Today NOTHING enforces it: `skill_catalog.active()` has exactly ONE consumer,
+# `core_api.py` (`ActiveSkillsSource` -> `describe_self`). There is no Effect.SKILL and no skill
+# run-path, and `self_model.py` does not even ADVERTISE this field (nor `domains`) — of the four
+# need-fields only `role`, `task_class` and `network` reach a reader. So an entry here DECLARES an
+# intent; it does not build a barrier. Fill it truthfully anyway: the day a gate reads it, it reads
+# THIS. (`domains` is worse than unread: "empty = all" vs "empty = none" is UNDEFINED in the code,
+# so every entry below omits it rather than assert something the code cannot honour.)
+
+# ── SANCTIONED SKILLS ────────────────────────────────────────────────────────────────────────
+# Sanctioned by the operator on 2026-07-17, after the D37 / D39-6 ritual: anatomy (`make skill-audit` -> ok on
+# all 5) -> CONTENT audit by a DISTINCT verifier (isolated Opus, D75: 0 NO-GO) -> this activation.
+# These five are not new: they are versioned in `system/skills/` and `distillateur` + `juge` had
+# already produced the whole macro campaign. The registry was EMPTY while they ran, so `make describe`
+# — injected into every fresh agent by the SessionStart hook — announced "no skill active yet". That
+# was the self-model lying by omission (the very thing the "MCP of self" exists to prevent). This block
+# closes that gap. Two fields deliberately CONTRADICT their own SKILL.md; both are measured, not
+# assumed, and each says why at its entry.
+
+[[skills]]
+name            = "distillateur"
+version         = "1.0"
+role            = "produce the distilled understanding of a document"
+state           = "active"
+sensitivity_max = "sensible"
+task_class      = "atomic"
+# CONTRADICTS the SKILL.md (which has no such field => false by default). Measured: `make
+# distill-batch` reaches api.anthropic.com (`runner_anthropic.py`). With `false`, `make describe`
+# would print `[atomic · stays_local]` for a skill with a LIVE cloud lane — a lie that the act of
+# activating would itself create. `network` declares what the skill's CODE needs.
+network         = true
+
+[[skills]]
+name            = "juge"
+version         = "1.0"
+role            = "verify every distilled fiche against its raw source, trusting no producer"
+state           = "active"
+sensitivity_max = "sensible"
+task_class      = "atomic"
+network         = false
+
+[[skills]]
+name            = "finisseur"
+version         = "1.0"
+role            = "polish a distilled fiche's readability without ever touching its verbatim P3"
+state           = "active"
+sensitivity_max = "sensible"
+task_class      = "atomic"
+network         = false
+
+[[skills]]
+name            = "veilleur"
+version         = "1.0"
+role            = "mine the distilled corpus into inert principle / skill / hypothesis drafts"
+state           = "active"
+sensitivity_max = "sensible"
+task_class      = "atomic"
+network         = false
+
+[[skills]]
+name            = "skill-creator"
+version         = "1.0"
+role            = "scaffold, emit and verify-in-code a candidate skill against the repo's anatomy"
+state           = "active"
+# CONTRADICTS the SKILL.md (which says "sensible"). Measured: it is the only one of the five to touch
+# NO `knowledge/` path at all — it reads `system/skills/`, `production/*.py`, `Makefile`, `tests/`.
+# Declaring the maximum ceiling for a skill that sees none of the operator's data breaks least privilege.
+sensitivity_max = "public"
+task_class      = "atomic"
+network         = false
+
+# ── CANDIDATE (draft — awaiting the ritual) ──────────────────────────────────────────────────
+# NOT yet sanctioned: `state = "draft"`, so `describe_self` does NOT advertise it (only ACTIVE is). It is
+# recorded here as lifecycle truth. Its `make` target already works (the catalog is describe-only, it
+# gates no execution today), and its first pass over the repo has run — but it stays DRAFT until the
+# distinct-auditor ritual (audit by an isolated Opus, D75) + the operator's activation flip it to ACTIVE.
+
+[[skills]]
+name            = "rangement"
+version         = "1.0"
+role            = "tidy the repo: quarantine clear cruft non-destructively (never delete, D74)"
+state           = "draft"
+# Runs over the whole LOCAL repo tree (incl. the knowledge bubble it quarantines into) and stays_local —
+# the sensible-local ceiling (D27). It never READS sensible CONTENT, though: raw / distilled / golden are
+# NEVER_TOUCH (structural, mnemosyne.production.rangement), so it sees paths, not the operator's data. No model,
+# no network.
+sensitivity_max = "sensible"
+task_class      = "atomic"
+network         = false
+
+[[skills]]
+name            = "planificateur"
+version         = "1.0"
+role            = "give birth to a conformant folder-shaped plan, and emit its literal shape to a host"
+state           = "active"
+# Reads and writes PLAN markdown inside a project folder (`projects/` is the operator's own work) and NOTHING
+# under `knowledge/` — so the ceiling is `perso`, not `sensible`: least privilege, the same reasoning
+# that keeps skill-creator at `public`. The emit half (`make plan-emit`) is stricter still: it opens no
+# file at all. No model, no brick, no network.
+sensitivity_max = "perso"
+task_class      = "atomic"
+network         = false
+
+[[skills]]
+name            = "public-mirror"
+version         = "1.0"
+role            = "bring this public mirror up to date: plan the scope, sanitise every file, refuse to commit on a leak"
+state           = "active"
+# Reads the WHOLE private repository (that is what it sanitises) and writes only into the export folder,
+# so the ceiling is the strictest one: `sensible`. It calls no model and opens no socket -- the leak scan,
+# the scope check and the import smoke test are pure local reads. The one thing it never does is decide:
+# `verify` REFUSES and names what it found, a human publishes.
+sensitivity_max = "sensible"
+task_class      = "orchestration"
+network         = false

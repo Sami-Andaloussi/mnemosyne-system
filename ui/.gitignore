@@ -1,0 +1,13 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+# The contract carries `perso` material (Operator's own words). The app NEVER writes it to
+# disk -- if a capture is ever taken one day for debugging, it does not end up
+# in the history. We ignore the WHOLE DIRECTORY: a file dropped there tomorrow
+# is protected by default, without anyone having to think about it.
+captures/
+
+# What the server said at the start of the RUNNING run -- read by `lancer.command`
+# to find the address to open. A machine trace, never part of the history.
+.journal/

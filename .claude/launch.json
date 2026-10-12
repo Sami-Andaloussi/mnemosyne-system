@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mnemosyne-ui",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["ui/serve.py"],
+      "port": 7373
+    }
+  ]
+}

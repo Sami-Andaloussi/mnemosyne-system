@@ -1,0 +1,23 @@
+# Local model catalog template.
+#
+# This is an explicit allow-list, not a runtime recommendation.  A caller must
+# name a model; the local runner never silently selects one.  The two entries
+# below are illustrative MLX-compatible defaults used by the included examples.
+# Replace them with models available on your own machine, then run:
+#
+#     PYTHONPATH=system/lib uv run python -m mnemosyne.runtime.models_run --emit
+#
+# The command prints a reproducible declaration from the local Hugging Face
+# cache.  Keep the generated size and measurement date together with each model.
+
+[panier]
+prefixe = "mlx-community/"
+mesure_le = "YYYY-MM-DD"
+
+[[modeles]]
+id = "mlx-community/Qwen2.5-VL-7B-Instruct-4bit"
+octets = 5653491418
+
+[[modeles]]
+id = "mlx-community/GLM-4-9B-0414-4bit"
+octets = 5309031270

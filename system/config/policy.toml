@@ -1,0 +1,45 @@
+# Mnemosyne policy template.
+#
+# This file is the declarative input to the Guard.  Keep it under deliberate
+# human control: it is read-only to governed agents, and an empty list grants
+# no permission.  Adapt the examples below for a local deployment.
+
+version = 1
+profile = "default"
+
+[routing]
+# Only public data may be eligible for an automatic external path.  The egress
+# allow-list below is still empty, so the shipped configuration sends nothing.
+canal_a_auto = ["public"]
+
+[egress]
+# Add exact host names only after a reviewed policy change.
+allowlist = []
+
+[cloisonnement]
+# Cross-bubble contracts are opt-in.  A missing contract denies the read.
+contracts = []
+
+[domains]
+# Example domain declarations.  A deployment may replace these lists with its
+# own taxonomy; undeclared domains remain inaccessible by default.
+"knowledge" = ["computer-science", "machine-learning", "information-retrieval"]
+"research" = ["macro", "econometrics", "statistics"]
+
+[recall_floor]
+# Add calibrated per-domain retrieval thresholds here when available.
+
+[bounds]
+queue_capacity = 256
+concurrency = 1
+agent_fanout = 8
+agent_max_turns = 16
+cross_bubble_depth = 3
+retrieval_topk = 64
+intake_capacity = 256
+intake_source_bytes = 268435456
+snapshot_retain_last = 10000
+
+[quotas]
+daily_cost_ceiling_eur = 5.0
+frontier_token_ceiling = 200000

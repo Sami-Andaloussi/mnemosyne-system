@@ -1,0 +1,100 @@
+# Mnemosyne - dev workshop manifest.
+# Tools FOR building Mnemosyne - NOT the OSS bricks OF Mnemosyne (those are
+# wired per-lot / in phase 3; their defaults, licences and pinned SHAs live in
+# system/config/oss_registry.md). Exact versions are frozen ahead of time.
+
+[project]
+name = "mnemosyne"
+version = "0.0.0"
+description = "A modular, local-first environment for LLM-driven knowledge workflows, agnostic to the selected model."
+requires-python = ">=3.12"
+# No DEFAULT runtime dependencies: every external brick sits behind a swap-able
+# port (LOT 1) and installs only at (3) ignition via the `bricks` extra below - so a
+# plain `uv sync` stays light and the suite is green with nothing installed (D126).
+dependencies = []
+
+[project.optional-dependencies]
+# The REAL OSS bricks ((3)) - heavy, machine-only, wired BEHIND the LOT 1 ports and
+# pulled in only at ignition: `uv sync --extra bricks`. Exact SHAs are frozen in
+# system/config/oss_registry.md at (2). tantivy ((3)-2b) and mlx-lm ((3)-2c) join here
+# as those retrieval/generation legs land.
+bricks = [
+    "FlagEmbedding",  # bge-m3 dense encoder (BAAI, MIT) - Embedder port (D68)
+    "qdrant-client",  # Qdrant local-server client (Apache-2.0) - VectorIndex port (D68)
+    "tantivy",        # BM25 lexical index (MIT) - KeywordIndex port (D68, (3)-2b)
+    "mlx-lm",         # MLX local generation (Apache-2.0) - Runner GenerationBackend (D104, (3)-2c)
+    "ladybug>=0.18.0",  # embedded bi-temporal graph (fork of Kuzu) - GraphStore port (D103, (3)-3a)
+    "tree-sitter",  # core runtime (Query/QueryCursor) the adapter imports DIRECTLY ((3) lot-1 fix, D103)
+    "tree-sitter-language-pack",  # grammars + get_language (maintained) - StructuralExtractor (D125-B9, (3)-3)
+    "docling",  # first-class document extraction (MIT) - SourceReader port (D43, (3)-4b)
+    # OCR replis (optional, wired only if chosen - same SourceReader prise, (3)-4b):
+    #   PaddleOCR-VL -> `pip install "paddleocr[doc-parser]"` + paddlepaddle (Apache-2.0)
+    #   MinerU       -> `pip install mineru` (v2.x, MinerU-OSL/Apache-based; WARNING: pin v2 to avoid v1 AGPL)
+    # Vision caption repli (sujet 2, optional - wired only if chosen, same ImageCaptioner prise, (3)-4b):
+    #   MLX-VLM -> `uv add --optional bricks mlx-vlm` (Apache-2.0; Apple-Silicon VLM, e.g. Qwen2.5-VL)
+    # Vector figure extraction (sujet E, optional - wired only if chosen, VectorFigureReader prise, (3)-4b):
+    #   PyMuPDF -> `uv add --optional bricks pymupdf` (AGPL, used LOCALLY only) - reads a chart's OWN vector
+    #   primitives so the data is EXTRACTED (deterministic), not guessed; the complement to the sujet-2 VLM,
+    #   which then handles only the genuinely RASTER figures. LOCAL + free, so it can be the default enrichment.
+    # Frontier vision fallback (optional, wired only if chosen AND under an explicit human gesture):
+    #   anthropic -> `uv add --optional bricks anthropic` (MIT SDK) - a frontier vision model for the
+    #   abstract charts the local vector pass + a local VLM BOTH fail. Guard-mediated egress, opt-in:
+    #   not installed by default; the API key is a human-provided env secret, never hardcoded.
+    # WhisperKit (voice) is NOT a Python dep - it is a LOCAL OpenAI-compatible server (the operator
+    #   installs + launches the Swift binary); its adapter is a urllib client (no dep added).
+    # YouTube transcript (sujet 3, optional - wired only if chosen, TranscriptFetcher prise, (3)-4b):
+    #   yt-dlp -> `uv add --optional bricks yt-dlp` (Unlicense; OUTBOUND fetch, Guard-mediated). NB: the
+    #   fetched json3 payload is downloaded with urllib (stdlib) - no HTTP dep added for one endpoint.
+    "mcp",          # official MCP Python SDK (MIT) - ToolPlugin MCP back-end (D114, (3)-5b)
+    "outlines",     # grammar-constrained decode (Apache-2.0) - Runner GenerationBackend wrap (D104, (3)-5b)
+    "pydantic-ai",  # typed multi-agent glue (MIT) - wired GUARD-SAFE via agents/ bridge (D93, (3)-5b)
+    # OS isolation (Sandbox port) is NOT pip - macOS-native, the operator installs out-of-band:
+    #   anthropic/sandbox-runtime (Seatbelt tier-1) - extract/lib run under macOS `sandbox-exec`
+    #   apple/container (micro-VM tier-2) - a Swift CLI (`brew`/binary); the adapter shells out / binds it
+    "typst",              # Typst compiler (Apache-2.0) - Renderer port, document output (D108, (3)-6b)
+    "presidio-analyzer",  # Microsoft Presidio PII detection (MIT) - raise-only SemanticSensor (D101, (3)-6b)
+    "presidio-anonymizer",  # Presidio PII masking (MIT) - Redactor (couture re-floors its output, (3)-6b)
+    "langfuse",           # local self-hosted tracing (MIT) - Observability TraceSink export (D111, (3)-6b)
+    "psutil",             # hardware stats (BSD) - HardwareProbe RAM signal; disk is stdlib shutil (D111, (3)-6b)
+    # Secrets + backup are NOT pip - CLIs, the operator installs out-of-band:
+    #   SOPS + age (secrets at rest) - `brew install sops age`; the adapter shells out (subprocess)
+    #   An encrypted backup tool (e.g. Kopia or restic) - the adapter shells out (subprocess)
+    #   Presidio also needs a spaCy model out-of-band (e.g. `python -m spacy download en_core_web_lg`)
+    "ocrmac>=1.0.1",
+    "pymupdf>=1.28.0",
+]
+
+# Dev toolchain (uv resolves + locks these into uv.lock). pytest runs the
+# D109 test ladder; ruff lints/formats. Kept light so `uv lock` is fast/truthful.
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+# The optional MLX/OCR integrations target Apple Silicon. Constrain the lock to that
+# target so the heavy bricks resolve cleanly without cross-platform CUDA variants.
+[tool.uv]
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# The importable package `mnemosyne` lives under system/lib/ (D70: code + engines).
+[tool.hatch.build.targets.wheel]
+packages = ["system/lib/mnemosyne"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Let tests import `mnemosyne` (system/lib) and the shared `_invariants` harness
+# (tests/) without an editable install - sane for local CI.
+pythonpath = ["system/lib", "tests"]
+# Progressive-red discipline (D109): a deferred invariant marked xfail that starts
+# passing (XPASS) turns the suite RED, forcing its promotion. Strict by default so
+# no future xfail silently loses that ratchet (the markers already pass strict=True).
+xfail_strict = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
